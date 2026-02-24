@@ -1,0 +1,11 @@
+[package]
+name = "flymouse-clipboard"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+arboard = "3"
+tokio = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+flymouse-protocol = { workspace = true }

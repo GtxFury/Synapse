@@ -1,0 +1,42 @@
+[workspace]
+members = [
+    "crates/flymouse-protocol",
+    "crates/flymouse-input",
+    "crates/flymouse-clipboard",
+    "crates/flymouse-net",
+    "crates/flymouse-screen",
+]
+resolver = "2"
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+bincode = "1"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+bytes = "1"
+tokio-util = { version = "0.7", features = ["codec"] }
+
+flymouse-protocol = { path = "crates/flymouse-protocol" }
+flymouse-input = { path = "crates/flymouse-input" }
+flymouse-clipboard = { path = "crates/flymouse-clipboard" }
+flymouse-net = { path = "crates/flymouse-net" }
+flymouse-screen = { path = "crates/flymouse-screen" }
+
+[package]
+name = "flymouse"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+flymouse-protocol = { workspace = true }
+flymouse-input = { workspace = true }
+flymouse-clipboard = { workspace = true }
+flymouse-net = { workspace = true }
+flymouse-screen = { workspace = true }

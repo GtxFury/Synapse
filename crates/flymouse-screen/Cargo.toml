@@ -1,0 +1,9 @@
+[package]
+name = "flymouse-screen"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+flymouse-protocol = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
