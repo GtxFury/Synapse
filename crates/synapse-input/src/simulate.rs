@@ -61,8 +61,8 @@ fn to_enigo_button(button: MouseButton) -> enigo::Button {
         MouseButton::Left => enigo::Button::Left,
         MouseButton::Right => enigo::Button::Right,
         MouseButton::Middle => enigo::Button::Middle,
-        MouseButton::Back => enigo::Button::Back,
-        MouseButton::Forward => enigo::Button::Forward,
+        // Back/Forward 并非所有平台都支持，回退到 Left
+        MouseButton::Back | MouseButton::Forward => enigo::Button::Left,
     }
 }
 
