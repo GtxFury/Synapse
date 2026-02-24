@@ -74,6 +74,9 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2" --locked
+
       - name: Build GUI
         uses: tauri-apps/tauri-action@v0
         env:
