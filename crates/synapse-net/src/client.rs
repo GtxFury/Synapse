@@ -1,9 +1,13 @@
 use anyhow::Result;
-use synapse_protocol::MessageCodec;
-use futures::StreamExt;
+use futures::{SinkExt, StreamExt};
+use synapse_protocol::{DeviceId, Message, MessageCodec};
 use tokio::net::TcpStream;
+use tokio::sync::mpsc;
 use tokio_util::codec::Framed;
-use tracing::info;
+use tokio_util::sync::CancellationToken;
+use tracing::{error, info, warn};
+
+use crate::ClientEvent;
 
 /// TCP 客户端
 pub struct Client {
@@ -15,27 +19,95 @@ impl Client {
         Self { addr: addr.into() }
     }
 
-    /// 连接到服务端
-    pub async fn connect(&self) -> Result<()> {
+    /// 连接到服务端，进入完整消息循环
+    pub async fn connect(
+        &self,
+        device_id: String,
+        device_name: String,
+        message_tx: mpsc::UnboundedSender<Message>,
+        event_tx: mpsc::UnboundedSender<ClientEvent>,
+        cancel: CancellationToken,
+    ) -> Result<()> {
+        let _ = event_tx.send(ClientEvent::Log(format!(
+            "Connecting to {}...", self.addr
+        )));
+
         let stream = TcpStream::connect(&self.addr).await?;
         info!(addr = %self.addr, "connected to server");
 
         let mut framed = Framed::new(stream, MessageCodec);
 
-        // 骨架：读取消息
-        while let Some(result) = framed.next().await {
-            match result {
-                Ok(msg) => {
-                    info!(?msg, "received message");
-                    // TODO: 实现完整的消息处理
+        // 发送 Hello 握手
+        framed.send(Message::Hello {
+            device_id: DeviceId(device_id.clone()),
+            device_name: device_name.clone(),
+            screens: vec![],
+        }).await?;
+
+        // 等待 Welcome
+        let welcome = loop {
+            let msg = tokio::select! {
+                _ = cancel.cancelled() => return Ok(()),
+                result = framed.next() => match result {
+                    Some(Ok(msg)) => msg,
+                    Some(Err(e)) => return Err(e.into()),
+                    None => return Err(anyhow::anyhow!("connection closed before Welcome")),
+                },
+            };
+            match msg {
+                Message::Welcome { device_id, device_name, .. } => {
+                    break (device_id.0, device_name);
                 }
-                Err(e) => {
-                    tracing::error!("receive error: {}", e);
+                _ => {
+                    warn!("expected Welcome, got {:?}", msg);
+                }
+            }
+        };
+
+        info!(server_id = %welcome.0, server_name = %welcome.1, "handshake complete");
+        let _ = event_tx.send(ClientEvent::Connected {
+            server_device_id: welcome.0,
+            server_device_name: welcome.1,
+        });
+        let _ = event_tx.send(ClientEvent::Log("Connected to server".into()));
+
+        // 消息接收循环
+        loop {
+            let msg = tokio::select! {
+                _ = cancel.cancelled() => {
+                    // 发送 Bye
+                    let _ = framed.send(Message::Bye {
+                        device_id: DeviceId(device_id.clone()),
+                    }).await;
                     break;
+                }
+                result = framed.next() => match result {
+                    Some(Ok(msg)) => msg,
+                    Some(Err(e)) => {
+                        error!("receive error: {e}");
+                        break;
+                    }
+                    None => {
+                        info!("server closed connection");
+                        break;
+                    }
+                },
+            };
+
+            match &msg {
+                Message::Ping(seq) => {
+                    let _ = framed.send(Message::Pong(*seq)).await;
+                }
+                Message::Pong(_) => {}
+                _ => {
+                    // 转发给上层处理（输入模拟、剪贴板等）
+                    let _ = message_tx.send(msg);
                 }
             }
         }
 
+        let _ = event_tx.send(ClientEvent::Disconnected);
+        let _ = event_tx.send(ClientEvent::Log("Disconnected from server".into()));
         Ok(())
     }
 }
