@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Synapse</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Synapse</h1>
+      <p class="subtitle">Mouse & Keyboard Sharing</p>
+    </header>
+
+    <main>
+      <section class="status-card">
+        <div class="status-indicator" id="status-indicator"></div>
+        <span id="status-text">Disconnected</span>
+      </section>
+
+      <section class="config">
+        <div class="field">
+          <label for="role-select">Role</label>
+          <select id="role-select">
+            <option value="server">Server</option>
+            <option value="client">Client</option>
+          </select>
+        </div>
+
+        <div class="field" id="host-field" style="display: none;">
+          <label for="host-input">Server Address</label>
+          <input type="text" id="host-input" placeholder="192.168.1.100" />
+        </div>
+
+        <div class="actions">
+          <button id="start-btn">Start</button>
+          <button id="stop-btn" disabled>Stop</button>
+        </div>
+      </section>
+
+      <section class="log-section">
+        <h2>Log</h2>
+        <div class="log-output" id="log-output"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
