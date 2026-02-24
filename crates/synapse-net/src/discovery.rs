@@ -2,7 +2,7 @@ use anyhow::Result;
 use mdns_sd::{ServiceDaemon, ServiceEvent, ServiceInfo};
 use tracing::info;
 
-const SERVICE_TYPE: &str = "_flymouse._tcp.local.";
+const SERVICE_TYPE: &str = "_synapse._tcp.local.";
 
 /// mDNS 设备发现
 pub struct Discovery {
@@ -27,7 +27,7 @@ impl Discovery {
     /// 浏览网络中的其他设备
     pub fn browse(&self) -> Result<mdns_sd::Receiver<ServiceEvent>> {
         let receiver = self.daemon.browse(SERVICE_TYPE)?;
-        info!("browsing for flymouse devices");
+        info!("browsing for synapse devices");
         Ok(receiver)
     }
 

@@ -1,10 +1,10 @@
 [workspace]
 members = [
-    "crates/flymouse-protocol",
-    "crates/flymouse-input",
-    "crates/flymouse-clipboard",
-    "crates/flymouse-net",
-    "crates/flymouse-screen",
+    "crates/synapse-protocol",
+    "crates/synapse-input",
+    "crates/synapse-clipboard",
+    "crates/synapse-net",
+    "crates/synapse-screen",
 ]
 resolver = "2"
 
@@ -18,14 +18,14 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 bytes = "1"
 tokio-util = { version = "0.7", features = ["codec"] }
 
-flymouse-protocol = { path = "crates/flymouse-protocol" }
-flymouse-input = { path = "crates/flymouse-input" }
-flymouse-clipboard = { path = "crates/flymouse-clipboard" }
-flymouse-net = { path = "crates/flymouse-net" }
-flymouse-screen = { path = "crates/flymouse-screen" }
+synapse-protocol = { path = "crates/synapse-protocol" }
+synapse-input = { path = "crates/synapse-input" }
+synapse-clipboard = { path = "crates/synapse-clipboard" }
+synapse-net = { path = "crates/synapse-net" }
+synapse-screen = { path = "crates/synapse-screen" }
 
 [package]
-name = "flymouse"
+name = "synapse"
 version = "0.1.0"
 edition = "2021"
 
@@ -35,8 +35,8 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 anyhow = { workspace = true }
-flymouse-protocol = { workspace = true }
-flymouse-input = { workspace = true }
-flymouse-clipboard = { workspace = true }
-flymouse-net = { workspace = true }
-flymouse-screen = { workspace = true }
+synapse-protocol = { workspace = true }
+synapse-input = { workspace = true }
+synapse-clipboard = { workspace = true }
+synapse-net = { workspace = true }
+synapse-screen = { workspace = true }

@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 use tracing_subscriber::EnvFilter;
 
 #[derive(Parser)]
-#[command(name = "flymouse", version, about = "跨平台鼠标键盘剪贴板共享工具")]
+#[command(name = "synapse", version, about = "多设备跨平台协作工具")]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -28,20 +28,20 @@ enum Command {
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env().add_directive("flymouse=info".parse()?))
+        .with_env_filter(EnvFilter::from_default_env().add_directive("synapse=info".parse()?))
         .init();
 
     let cli = Cli::parse();
 
     match cli.command {
         Command::Server { bind } => {
-            tracing::info!(addr = %bind, "starting flymouse server");
-            let server = flymouse_net::Server::new(bind);
+            tracing::info!(addr = %bind, "starting synapse server");
+            let server = synapse_net::Server::new(bind);
             server.run().await?;
         }
         Command::Client { server } => {
-            tracing::info!(addr = %server, "connecting to flymouse server");
-            let client = flymouse_net::Client::new(server);
+            tracing::info!(addr = %server, "connecting to synapse server");
+            let client = synapse_net::Client::new(server);
             client.connect().await?;
         }
     }

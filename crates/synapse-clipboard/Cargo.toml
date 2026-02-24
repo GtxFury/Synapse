@@ -1,12 +1,11 @@
 [package]
-name = "flymouse-input"
+name = "synapse-clipboard"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-flymouse-protocol = { workspace = true }
-rdev = "0.5"
-enigo = "0.2"
+arboard = "3"
 tokio = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
+synapse-protocol = { workspace = true }

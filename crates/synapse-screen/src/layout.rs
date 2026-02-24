@@ -1,4 +1,4 @@
-use flymouse_protocol::screen::{Edge, ScreenId, ScreenInfo, ScreenPosition, ScreenRect};
+use synapse_protocol::screen::{Edge, ScreenId, ScreenInfo, ScreenPosition, ScreenRect};
 
 /// 屏幕布局管理器
 ///

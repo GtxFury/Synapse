@@ -1,5 +1,5 @@
 use anyhow::Result;
-use flymouse_protocol::MessageCodec;
+use synapse_protocol::MessageCodec;
 use futures::StreamExt;
 use tokio::net::TcpStream;
 use tokio_util::codec::Framed;

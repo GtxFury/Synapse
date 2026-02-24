@@ -1,6 +1,6 @@
 use anyhow::Result;
 use enigo::{Enigo, Keyboard, Mouse, Settings};
-use flymouse_protocol::input::{ButtonAction, KeyAction, KeyCode, MouseButton};
+use synapse_protocol::input::{ButtonAction, KeyAction, KeyCode, MouseButton};
 use tracing::debug;
 
 /// 输入模拟器，封装 enigo

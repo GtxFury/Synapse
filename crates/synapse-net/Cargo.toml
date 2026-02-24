@@ -1,10 +1,10 @@
 [package]
-name = "flymouse-net"
+name = "synapse-net"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-flymouse-protocol = { workspace = true }
+synapse-protocol = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
 bytes = { workspace = true }

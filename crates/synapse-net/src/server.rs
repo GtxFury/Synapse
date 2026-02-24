@@ -1,5 +1,5 @@
 use anyhow::Result;
-use flymouse_protocol::{Message, MessageCodec};
+use synapse_protocol::{Message, MessageCodec};
 use futures::SinkExt;
 use tokio::net::TcpListener;
 use tokio_util::codec::Framed;
