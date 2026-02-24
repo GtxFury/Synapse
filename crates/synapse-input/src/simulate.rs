@@ -21,6 +21,13 @@ impl InputSimulator {
         Ok(())
     }
 
+    /// 模拟鼠标相对移动
+    pub fn move_mouse_relative(&mut self, dx: i32, dy: i32) -> Result<()> {
+        debug!(dx, dy, "simulating relative mouse move");
+        self.enigo.move_mouse(dx, dy, enigo::Coordinate::Rel)?;
+        Ok(())
+    }
+
     /// 模拟鼠标按键
     pub fn mouse_button(&mut self, button: MouseButton, action: ButtonAction) -> Result<()> {
         debug!(?button, ?action, "simulating mouse button");

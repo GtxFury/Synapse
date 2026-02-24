@@ -8,6 +8,13 @@ pub use server::Server;
 
 use serde::{Deserialize, Serialize};
 
+/// Server 端需要在本地执行的动作
+#[derive(Debug, Clone)]
+pub enum LocalAction {
+    /// 将鼠标移动到指定绝对坐标（用于焦点在远程时锁定鼠标到屏幕中心）
+    MoveMouse(i32, i32),
+}
+
 /// 服务端产生的事件，用于通知上层（GUI/CLI）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ServerEvent {
@@ -19,6 +26,10 @@ pub enum ServerEvent {
     /// 客户端已断开
     DeviceDisconnected {
         device_id: String,
+    },
+    /// 焦点切换
+    FocusChanged {
+        target: String,
     },
     /// 日志消息
     Log(String),

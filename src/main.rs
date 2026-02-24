@@ -1,9 +1,10 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use synapse_clipboard::{ClipboardContent, ClipboardWatcher};
-use synapse_input::capture::{rdev_event_to_message, InputCapturer};
+use synapse_input::capture::{get_screen_size, rdev_event_to_message, InputCapturer};
 use synapse_input::InputSimulator;
-use synapse_net::{ClientEvent, Server, ServerEvent};
+use synapse_net::{ClientEvent, LocalAction, Server, ServerEvent};
+use synapse_protocol::screen::Edge;
 use synapse_protocol::Message;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
@@ -24,6 +25,9 @@ enum Command {
         /// 监听地址
         #[arg(short, long, default_value = "0.0.0.0:24800")]
         bind: String,
+        /// Client 所在方向 (left/right/top/bottom)
+        #[arg(short = 'd', long, default_value = "right")]
+        client_direction: String,
     },
     /// 以客户端模式运行（被控端）
     Client {
@@ -51,8 +55,18 @@ async fn main() -> Result<()> {
     });
 
     match cli.command {
-        Command::Server { bind } => {
+        Command::Server { bind, client_direction } => {
             tracing::info!(addr = %bind, "starting synapse server");
+
+            let direction = match client_direction.to_lowercase().as_str() {
+                "left" => Edge::Left,
+                "right" => Edge::Right,
+                "top" => Edge::Top,
+                "bottom" => Edge::Bottom,
+                _ => Edge::Right,
+            };
+            let screen_size = get_screen_size();
+            tracing::info!(?screen_size, ?direction, "screen config");
 
             // 输入捕获
             let (rdev_tx, mut rdev_rx) = mpsc::unbounded_channel();
@@ -115,6 +129,9 @@ async fn main() -> Result<()> {
                         ServerEvent::DeviceDisconnected { device_id } => {
                             tracing::info!(%device_id, "device disconnected");
                         }
+                        ServerEvent::FocusChanged { target } => {
+                            tracing::info!(%target, "focus changed");
+                        }
                         ServerEvent::Log(msg) => {
                             tracing::info!("{msg}");
                         }
@@ -122,8 +139,43 @@ async fn main() -> Result<()> {
                 }
             });
 
+            // LocalAction 处理线程
+            let (local_action_tx, mut local_action_rx) = mpsc::unbounded_channel();
+            let cancel_la = cancel.clone();
+            std::thread::spawn(move || {
+                let mut simulator = match InputSimulator::new() {
+                    Ok(s) => s,
+                    Err(e) => {
+                        tracing::error!("Failed to create InputSimulator for local actions: {e}");
+                        return;
+                    }
+                };
+                let rt = tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap();
+                rt.block_on(async {
+                    loop {
+                        tokio::select! {
+                            _ = cancel_la.cancelled() => break,
+                            Some(action) = local_action_rx.recv() => {
+                                match action {
+                                    LocalAction::MoveMouse(x, y) => {
+                                        let _ = simulator.move_mouse(x, y);
+                                    }
+                                }
+                            }
+                            else => break,
+                        }
+                    }
+                });
+            });
+
             let server = Server::new(bind);
-            server.run(input_rx, clip_msg_rx, event_tx, cancel).await?;
+            server.run(
+                input_rx, clip_msg_rx, local_action_tx, event_tx,
+                screen_size, direction, cancel,
+            ).await?;
         }
         Command::Client { server } => {
             tracing::info!(addr = %server, "connecting to synapse server");
@@ -175,6 +227,9 @@ async fn main() -> Result<()> {
                                     Message::MouseMove { x, y } => {
                                         let _ = simulator.move_mouse(x as i32, y as i32);
                                     }
+                                    Message::MouseDelta { dx, dy } => {
+                                        let _ = simulator.move_mouse_relative(dx as i32, dy as i32);
+                                    }
                                     Message::MouseButtonEvent { button, action } => {
                                         let _ = simulator.mouse_button(button, action);
                                     }
@@ -197,7 +252,8 @@ async fn main() -> Result<()> {
             });
 
             let client = synapse_net::Client::new(server);
-            client.connect(hostname.clone(), hostname, message_tx, event_tx, cancel).await?;
+            let screen_size = get_screen_size();
+            client.connect(hostname.clone(), hostname, screen_size, message_tx, event_tx, cancel).await?;
         }
     }
 

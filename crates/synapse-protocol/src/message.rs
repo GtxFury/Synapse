@@ -38,6 +38,11 @@ pub enum Message {
         dx: f64,
         dy: f64,
     },
+    /// 相对鼠标移动（跨屏 delta）
+    MouseDelta {
+        dx: f64,
+        dy: f64,
+    },
     KeyEvent {
         key: KeyCode,
         action: KeyAction,

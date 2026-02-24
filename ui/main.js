@@ -9,6 +9,8 @@ const modeClient = document.getElementById("mode-client");
 const bindField = document.getElementById("bind-field");
 const serverField = document.getElementById("server-field");
 const bindInput = document.getElementById("bind-input");
+const directionSelect = document.getElementById("direction-select");
+const directionField = document.getElementById("direction-field");
 const serverInput = document.getElementById("server-input");
 const startBtn = document.getElementById("start-btn");
 const stopBtn = document.getElementById("stop-btn");
@@ -41,6 +43,7 @@ function setMode(mode) {
   modeServer.classList.toggle("active", mode === "server");
   modeClient.classList.toggle("active", mode === "client");
   bindField.style.display = mode === "server" ? "block" : "none";
+  directionField.style.display = mode === "server" ? "block" : "none";
   serverField.style.display = mode === "client" ? "block" : "none";
   devicesCard.style.display = mode === "server" && running ? "block" : "none";
 }
@@ -79,8 +82,9 @@ startBtn.addEventListener("click", async () => {
   try {
     if (currentMode === "server") {
       const bind = bindInput.value || "0.0.0.0:24800";
-      appendLog(`Starting server on ${bind}...`);
-      await invoke("start_server", { bind });
+      const clientDirection = directionSelect.value;
+      appendLog(`Starting server on ${bind} (client: ${clientDirection})...`);
+      await invoke("start_server", { bind, clientDirection });
     } else {
       const addr = serverInput.value;
       if (!addr) {

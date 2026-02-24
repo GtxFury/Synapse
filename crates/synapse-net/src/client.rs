@@ -1,5 +1,6 @@
 use anyhow::Result;
 use futures::{SinkExt, StreamExt};
+use synapse_protocol::screen::{ScreenId, ScreenInfo, ScreenRect};
 use synapse_protocol::{DeviceId, Message, MessageCodec};
 use tokio::net::TcpStream;
 use tokio::sync::mpsc;
@@ -24,6 +25,7 @@ impl Client {
         &self,
         device_id: String,
         device_name: String,
+        screen_size: (u32, u32),
         message_tx: mpsc::UnboundedSender<Message>,
         event_tx: mpsc::UnboundedSender<ClientEvent>,
         cancel: CancellationToken,
@@ -37,11 +39,20 @@ impl Client {
 
         let mut framed = Framed::new(stream, MessageCodec);
 
-        // 发送 Hello 握手
+        // 发送 Hello 握手（携带屏幕信息）
         framed.send(Message::Hello {
             device_id: DeviceId(device_id.clone()),
             device_name: device_name.clone(),
-            screens: vec![],
+            screens: vec![ScreenInfo {
+                id: ScreenId(0),
+                name: "primary".into(),
+                rect: ScreenRect {
+                    x: 0, y: 0,
+                    width: screen_size.0,
+                    height: screen_size.1,
+                },
+                is_primary: true,
+            }],
         }).await?;
 
         // 等待 Welcome

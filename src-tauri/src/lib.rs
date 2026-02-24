@@ -3,9 +3,10 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use synapse_clipboard::{ClipboardContent, ClipboardWatcher};
-use synapse_input::capture::{rdev_event_to_message, InputCapturer};
+use synapse_input::capture::{get_screen_size, rdev_event_to_message, InputCapturer};
 use synapse_input::InputSimulator;
-use synapse_net::{Client, ClientEvent, Server, ServerEvent};
+use synapse_net::{Client, ClientEvent, LocalAction, Server, ServerEvent};
+use synapse_protocol::screen::Edge;
 use synapse_protocol::Message;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::{mpsc, Mutex};
@@ -53,11 +54,22 @@ impl Default for AppState {
 
 type SharedState = Arc<Mutex<AppState>>;
 
+fn parse_direction(s: &str) -> Edge {
+    match s.to_lowercase().as_str() {
+        "left" => Edge::Left,
+        "right" => Edge::Right,
+        "top" => Edge::Top,
+        "bottom" => Edge::Bottom,
+        _ => Edge::Right,
+    }
+}
+
 #[tauri::command]
 async fn start_server(
     app: AppHandle,
     state: tauri::State<'_, SharedState>,
     bind: String,
+    client_direction: Option<String>,
 ) -> Result<(), String> {
     let mut s = state.lock().await;
     if s.role != Role::Idle {
@@ -77,8 +89,12 @@ async fn start_server(
 
     let state_clone = state.inner().clone();
     let app_clone = app.clone();
+    let direction = parse_direction(&client_direction.unwrap_or_else(|| "right".into()));
 
     let handle = tokio::spawn(async move {
+        // 获取屏幕尺寸
+        let screen_size = get_screen_size();
+
         // 输入捕获 channel
         let (rdev_tx, mut rdev_rx) = mpsc::unbounded_channel();
         let (input_tx, input_rx) = mpsc::unbounded_channel();
@@ -164,6 +180,9 @@ async fn start_server(
                         s.devices.retain(|d| d.device_id != *device_id);
                         let _ = app_events.emit("synapse://device-disconnected", device_id.clone());
                     }
+                    ServerEvent::FocusChanged { target } => {
+                        let _ = app_events.emit("synapse://log", format!("Focus → {target}"));
+                    }
                     ServerEvent::Log(msg) => {
                         let _ = app_events.emit("synapse://log", msg.clone());
                     }
@@ -171,9 +190,37 @@ async fn start_server(
             }
         });
 
+        // LocalAction 处理线程（鼠标锁定等）
+        let (local_action_tx, mut local_action_rx) = mpsc::unbounded_channel();
+        std::thread::spawn(move || {
+            let mut simulator = match InputSimulator::new() {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::error!("Failed to create InputSimulator for local actions: {e}");
+                    return;
+                }
+            };
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+            rt.block_on(async {
+                while let Some(action) = local_action_rx.recv().await {
+                    match action {
+                        LocalAction::MoveMouse(x, y) => {
+                            let _ = simulator.move_mouse(x, y);
+                        }
+                    }
+                }
+            });
+        });
+
         // 启动服务端
         let server = Server::new(bind);
-        if let Err(e) = server.run(input_rx, clip_msg_rx, event_tx, cancel).await {
+        if let Err(e) = server.run(
+            input_rx, clip_msg_rx, local_action_tx, event_tx,
+            screen_size, direction, cancel,
+        ).await {
             let _ = app_clone.emit("synapse://log", format!("Server error: {e}"));
         }
 
@@ -282,6 +329,9 @@ async fn start_client(
                                 Message::MouseMove { x, y } => {
                                     let _ = simulator.move_mouse(x as i32, y as i32);
                                 }
+                                Message::MouseDelta { dx, dy } => {
+                                    let _ = simulator.move_mouse_relative(dx as i32, dy as i32);
+                                }
                                 Message::MouseButtonEvent { button, action } => {
                                     let _ = simulator.mouse_button(button, action);
                                 }
@@ -304,10 +354,12 @@ async fn start_client(
         });
 
         // 启动客户端连接
+        let screen_size = get_screen_size();
         let client = Client::new(server_addr);
         if let Err(e) = client.connect(
             hostname.clone(),
             hostname,
+            screen_size,
             message_tx,
             event_tx,
             cancel,

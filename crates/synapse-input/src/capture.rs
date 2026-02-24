@@ -4,6 +4,12 @@ use synapse_protocol::Message;
 use tokio::sync::mpsc;
 use tracing::info;
 
+/// 获取主屏幕分辨率
+pub fn get_screen_size() -> (u32, u32) {
+    let (w, h) = rdev::display_size().unwrap_or((1920, 1080));
+    (w as u32, h as u32)
+}
+
 /// 输入捕获器，封装 rdev::listen
 pub struct InputCapturer {
     _private: (),

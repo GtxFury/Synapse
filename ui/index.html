@@ -34,6 +34,15 @@
         <label for="bind-input">Bind Address</label>
         <input type="text" id="bind-input" value="0.0.0.0:24800" placeholder="0.0.0.0:24800" />
       </div>
+      <div class="field" id="direction-field">
+        <label for="direction-select">Client Direction</label>
+        <select id="direction-select">
+          <option value="right" selected>Right</option>
+          <option value="left">Left</option>
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+        </select>
+      </div>
       <div class="field" id="server-field" style="display:none;">
         <label for="server-input">Server Address</label>
         <input type="text" id="server-input" placeholder="192.168.1.100:24800" />

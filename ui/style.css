@@ -161,7 +161,8 @@ body {
   letter-spacing: 0.3px;
 }
 
-.field input {
+.field input,
+.field select {
   width: 100%;
   padding: 8px 12px;
   background: rgba(255, 255, 255, 0.04);
@@ -173,13 +174,19 @@ body {
   transition: border-color 0.2s ease;
 }
 
-.field input:focus {
+.field input:focus,
+.field select:focus {
   border-color: var(--primary);
 }
 
 .field input::placeholder {
   color: var(--text-muted);
   opacity: 0.5;
+}
+
+.field select option {
+  background: var(--bg);
+  color: var(--text);
 }
 
 /* 按钮 */

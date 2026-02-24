@@ -12,7 +12,7 @@ pub struct ScreenPosition {
 }
 
 /// 屏幕边缘方向
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Edge {
     Top,
     Bottom,
